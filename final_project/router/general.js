@@ -2,6 +2,7 @@ const express = require('express');
 let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
+const axios = require("axios").default;
 const public_users = express.Router();
 
 
@@ -24,49 +25,75 @@ public_users.post("/register", (req,res) => {
 // Get the book list available in the shop
 public_users.get('/',function (req, res) {
   //Write your code here
-  return res.status(200).send(JSON.stringify(books));
+  let booksStringifier = new Promise((resolve, reject) => {
+    resolve(JSON.stringify(books));
+  });
+  booksStringifier.then((result) => {
+    res.status(200).send(result);
+  })
 });
 
 // Get book details based on ISBN
 public_users.get('/isbn/:isbn',function (req, res) {
   //Write your code here
-  const isbn = req.params.isbn;
-  const book = books[isbn];
-  if (book === undefined) {
-    res.status(404).send("Book doesn't exist")
+  let bookStringifier = new Promise((resolve, reject) => {
+    const isbn = req.params.isbn;
+    const book = books[isbn];
+    if (book === undefined) {
+      throw new Error();
+    }
+    resolve(JSON.stringify(book));
+  });
+
+  bookStringifier.catch((reason) => {
+    res.status(404).send("Book doesn't exist");
     return;
-  }
-  res.status(200).send(JSON.stringify(book));
- });
+  });
+
+  bookStringifier.then((book) => {
+    res.status(200).send(book);
+  });
+
+});
   
 // Get book details based on author
 public_users.get('/author/:author',function (req, res) {
   //Write your code here
-  const author = req.params.author;
-  const bookKeys = Object.keys(books);
-  let booksOfAuthor = [];
-  bookKeys.forEach((key) => {
-    const book = books[key]
-    if (book["author"] === author) {
-        booksOfAuthor.push(book);
-    } 
+  new Promise((resolve, reject) => {
+    const author = req.params.author;
+    const bookKeys = Object.keys(books);
+    let booksOfAuthor = [];
+    bookKeys.forEach((key) => {
+      const book = books[key]
+      if (book["author"] === author) {
+          booksOfAuthor.push(book);
+      }   
+    });
+    resolve(JSON.stringify(booksOfAuthor));
+  })
+  .then(filteredBooksJSON => {
+    res.status(200).send(filteredBooksJSON);
   });
-  return res.status(200).send(JSON.stringify(booksOfAuthor));
 });
 
 // Get all books based on title
 public_users.get('/title/:title',function (req, res) {
   //Write your code here
-  const title = req.params.title;
-  const bookKeys = Object.keys(books);
-  let booksWithTitle = [];
-  bookKeys.forEach((key) => {
-    const book = books[key];
-    if (book["title"] === title) {
-        booksWithTitle.push(book);
-    }
+  new Promise((resolve, reject) => {
+    const title = req.params.title;
+    const bookKeys = Object.keys(books);
+    let booksWithTitle = [];
+    bookKeys.forEach((key) => {
+      const book = books[key];
+      if (book["title"] === title) {
+          booksWithTitle.push(book);
+      }
+    });
+    resolve(JSON.stringify(booksWithTitle));  
+  })
+  .then((filteredBooksJSON) => {
+    res.status(200).send(filteredBooksJSON);
   });
-  return res.status(200).send(JSON.stringify(booksWithTitle));
 });
 
 //  Get book review
